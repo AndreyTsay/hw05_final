@@ -13,6 +13,7 @@ NUMBER_OF_POSTS: int = 10
 @cache_page(20, key_prefix='index_page')
 def index(request):
     posts = Post.objects.select_related('group', 'author').all()
+    template = 'posts/index.html'
     paginator = Paginator(posts, NUMBER_OF_POSTS)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -21,11 +22,12 @@ def index(request):
         'title': title,
         'page_obj': page_obj,
     }
-    return render(request, 'posts/index.html', context)
+    return render(request, template, context)
 
 
 def group_list(request, slug):
     group = get_object_or_404(Group, slug=slug)
+    template = 'posts/group_list.html'
     posts = group.posts.all()
     paginator = Paginator(posts, NUMBER_OF_POSTS)
     page_number = request.GET.get('page')
@@ -34,20 +36,23 @@ def group_list(request, slug):
         'group': group,
         'page_obj': page_obj,
     }
-    return render(request, 'posts/group_list.html', context)
+    return render(request, template, context)
 
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
+    template = 'posts/profile.html'
     post_list = author.posts.all()
     paginator = Paginator(post_list, NUMBER_OF_POSTS)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
+    following = author.following.exists()
     context = {
         "author": author,
         "page_obj": page_obj,
+        "following": following,
     }
-    return render(request, 'posts/profile.html', context)
+    return render(request, template, context)
 
 
 def post_detail(request, post_id):

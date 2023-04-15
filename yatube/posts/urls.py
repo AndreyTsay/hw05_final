@@ -14,6 +14,8 @@ urlpatterns = [path('', views.index, name='index'),
                path("create/", views.create_post, name="create_post"),
                path("posts/<int:post_id>/edit/",
                     views.post_edit, name="post_edit"),
+               path('posts/<int:post_id>/comment/',
+                    views.add_comment, name='add_comment'),
                ]
 handler404 = 'core.views.page_not_found'
 if settings.DEBUG:

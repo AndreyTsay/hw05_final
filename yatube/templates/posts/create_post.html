@@ -25,7 +25,7 @@
                 {% endfor %}
             {% endif %}
 
-            <form method="post" action="{{ request.get_full_path }}">
+            <form method="post" enctype="multipart/form-data" action="{% if is_edit %}{% url 'posts:post_edit' form.instance.pk %}{% else %}{% url 'posts:create_post' %}{% endif %}">
               {% csrf_token %}
              
               {% for field in form %}

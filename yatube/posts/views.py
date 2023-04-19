@@ -2,7 +2,6 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.decorators.cache import cache_page
 
 from .forms import PostForm, CommentForm
 from .models import Post, Group, User, Comment, Follow
@@ -10,7 +9,6 @@ from .models import Post, Group, User, Comment, Follow
 NUMBER_OF_POSTS: int = 10
 
 
-@cache_page(20, key_prefix='index_page')
 def index(request):
     posts = Post.objects.select_related('group', 'author').all()
     template = 'posts/index.html'
@@ -125,13 +123,14 @@ def follow_index(request):
     )
     posts = Post.objects.filter(author_id__in=follower)
     paginator = Paginator(posts, NUMBER_OF_POSTS)
+    template = "posts/follow.html"
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
     context = {
         "page_obj": page_obj,
-        "title": "Избранные посты",
+        "title": "Ваши подписки",
     }
-    return render(request, "posts/follow.html", context)
+    return render(request, template, context)
 
 
 @login_required

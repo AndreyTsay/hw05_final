@@ -1,19 +1,14 @@
 from http import HTTPStatus
+from django.test import Client, TestCase
 
-from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
-
-from posts.models import Post, Group
-
-
-User = get_user_model()
+from ..models import Post, Group, User
 
 
 class PostURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create(username="NAY")
+        cls.user = User.objects.create(username="NoName")
         cls.group = Group.objects.create(
             title="Тестовая группа",
             slug="test-slug",
@@ -39,14 +34,13 @@ class PostURLTests(TestCase):
         }
 
     def setUp(self):
-        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(PostURLTests.user)
 
     def test_urls_exists_at_desired_location(self):
         for adress in self.templates:
             with self.subTest(adress):
-                response = self.guest_client.get(adress)
+                response = self.client.get(adress)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_posts_post_id_edit_url_exists_at_author(self):
@@ -59,12 +53,12 @@ class PostURLTests(TestCase):
 
     def test_create_url_redirect_anonymous_on_auth_login(self):
         """Страница /create/ доступна авторизованному пользователю."""
-        response = self.guest_client.get("/create/", follow=True)
+        response = self.client.get("/create/", follow=True)
         self.assertRedirects(response, "/auth/login/?next=/create/")
 
     def test_unexisting_page_at_desired_location(self):
         """Страница /unexisting_page/ должна выдать ошибку."""
-        response = self.guest_client.get("/unexisting_page/")
+        response = self.client.get("/unexisting_page/")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_urls_uses_correct_template(self):

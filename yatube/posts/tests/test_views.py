@@ -1,35 +1,19 @@
-from http import HTTPStatus
 import shutil
 import tempfile
 
+from http import HTTPStatus
 
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.paginator import Page
-from django.test import Client, TestCase, override_settings
+from django.test import Client, override_settings, TestCase
 from django.urls import reverse
 
-from posts.models import Post, Group, Comment, Follow
+from posts.models import Comment, Follow, Group, Post
 from posts.views import NUMBER_OF_POSTS
-from posts.tests.constants import (
-
-    GROUP_LIST_TEMPLATE,
-    GROUP_LIST_URL_NAME,
-    INDEX_TEMPLATE,
-    INDEX_URL_NAME,
-    PROFILE_URL_NAME,
-    FOLLOW_INDEX_URL_NAME,
-    PROFILE_URL_TEMPLATE,
-    POST_DETAIL_URL_NAME,
-    POST_DETAIL_URL_TEMPLATE,
-    POST_EDIT_URL_NAME,
-    POST_EDIT_URL_NAME_TEMPLATE,
-    POST_CREATE_URL_NAME,
-    POST_CREATE_URL_TEMPLATE,
-    POST_ADD_COMMENT,
-)
+import posts.tests.constants as ct
 
 User = get_user_model()
 
@@ -52,8 +36,9 @@ class PaginatorViewsTest(TestCase):
         )
 
     def test_paginator_index(self):
+        """"Тест пагинатора на странице index"""
         url_expected_post_number = {
-            INDEX_URL_NAME: (
+            ct.INDEX_URL_NAME: (
                 {},
                 Post.objects.all()[:NUMBER_OF_POSTS]
             ),
@@ -71,8 +56,9 @@ class PaginatorViewsTest(TestCase):
                 )
 
     def test_paginator_group_list(self):
+        """Тест пагинатора на странице group_list"""
         url_expected_post_number = {
-            GROUP_LIST_URL_NAME: (
+            ct.GROUP_LIST_URL_NAME: (
                 {'slug': self.group.slug},
                 self.group.posts.all()[:NUMBER_OF_POSTS]
             ),
@@ -90,8 +76,9 @@ class PaginatorViewsTest(TestCase):
                 )
 
     def test_paginator_profile(self):
+        """Тест пагинатора на странице profile"""
         url_expected_post_number = {
-            PROFILE_URL_NAME: (
+            ct.PROFILE_URL_NAME: (
                 {'username': self.user.username},
                 self.user.posts.all()[:NUMBER_OF_POSTS]
             ),
@@ -107,34 +94,6 @@ class PaginatorViewsTest(TestCase):
                 self.assertQuerysetEqual(
                     page_obj, queryset, lambda x: x
                 )
-
-    def test_pages_show_correct_context(self):
-        """Шаблоны index, group_list, profile сформированы
-        с правильным контекстом.
-        """
-        data = {
-            INDEX_URL_NAME: (
-                INDEX_TEMPLATE, {}
-            ),
-            GROUP_LIST_URL_NAME: (
-                GROUP_LIST_TEMPLATE, {'slug': self.group.slug}
-            ),
-            PROFILE_URL_NAME: (
-                PROFILE_URL_TEMPLATE, {'username': self.user.username}
-            )}
-
-        for url_name, params in data.items():
-            with self.subTest(url_name=url_name):
-                template, kwargs = params
-                response = self.authorized_client.get(
-                    reverse(url_name, kwargs=kwargs))
-                page_obj = response.context.get('page_obj')
-                text = self.post
-                self.assertIsNotNone(page_obj)
-                self.assertIsInstance(page_obj, Page)
-                self.assertEqual(response.status_code, HTTPStatus.OK)
-                self.assertTemplateUsed(response, template)
-                self.assertIn(text, page_obj)
 
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -169,29 +128,36 @@ class TaskPagesTests(TestCase):
             image=cls.uploaded,
         )
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
     def test_templates(self):
+        """Тест формирования правильных шаблонов страниц: index, group_list,
+        profile, post_detail, post_edit, post_create"""
         data = {
-            INDEX_URL_NAME: (
-                INDEX_TEMPLATE, {}
+            ct.INDEX_URL_NAME: (
+                ct.INDEX_TEMPLATE, {}
             ),
-            GROUP_LIST_URL_NAME: (
-                GROUP_LIST_TEMPLATE, {'slug': self.group.slug}
+            ct.GROUP_LIST_URL_NAME: (
+                ct.GROUP_LIST_TEMPLATE, {'slug': self.group.slug}
             ),
-            PROFILE_URL_NAME: (
-                PROFILE_URL_TEMPLATE, {'username': self.user.username}
+            ct.PROFILE_URL_NAME: (
+                ct.PROFILE_URL_TEMPLATE, {'username': self.user.username}
             ),
-            POST_DETAIL_URL_NAME: (
-                POST_DETAIL_URL_TEMPLATE, {'post_id': self.post.id}
+            ct.POST_DETAIL_URL_NAME: (
+                ct.POST_DETAIL_URL_TEMPLATE, {'post_id': self.post.id}
             ),
-            POST_EDIT_URL_NAME: (
-                POST_EDIT_URL_NAME_TEMPLATE, {'post_id': self.post.id}
+            ct.POST_EDIT_URL_NAME: (
+                ct.POST_EDIT_URL_NAME_TEMPLATE, {'post_id': self.post.id}
             ),
-            POST_CREATE_URL_NAME: (
-                POST_CREATE_URL_TEMPLATE, {}
+            ct.POST_CREATE_URL_NAME: (
+                ct.POST_CREATE_URL_TEMPLATE, {}
             ),
         }
         for url_name, params in data.items():
@@ -204,7 +170,7 @@ class TaskPagesTests(TestCase):
 
     def test_paginator_profile(self):
         url_expected_post_number = {
-            PROFILE_URL_NAME: (
+            ct.PROFILE_URL_NAME: (
                 {'username': self.user.username},
                 self.user.posts.all()[:NUMBER_OF_POSTS]
             ),
@@ -223,7 +189,7 @@ class TaskPagesTests(TestCase):
 
     def test_posts_index_page_show_correct_context(self):
         """Шаблон posts/index сформирован с правильным контекстом."""
-        response = self.client.get(reverse(INDEX_URL_NAME))
+        response = self.client.get(reverse(ct.INDEX_URL_NAME))
         page_context = (
             'title',
             'page_obj',
@@ -236,7 +202,7 @@ class TaskPagesTests(TestCase):
     def test_group_list_show_correct_context(self):
         """Список постов в шаблоне group_list равен ожидаемому контексту."""
         response = self.client.get(
-            reverse(GROUP_LIST_URL_NAME, kwargs={"slug": self.group.slug})
+            reverse(ct.GROUP_LIST_URL_NAME, kwargs={"slug": self.group.slug})
         )
         page_context = (
             'page_obj',
@@ -251,7 +217,7 @@ class TaskPagesTests(TestCase):
     def test_profile_show_correct_context(self):
         """Список постов в шаблоне profile равен ожидаемому контексту."""
         response = self.client.get(
-            reverse(PROFILE_URL_NAME, args=(self.user.username,))
+            reverse(ct.PROFILE_URL_NAME, args=(self.user.username,))
         )
         page_context = (
             'page_obj',
@@ -266,7 +232,7 @@ class TaskPagesTests(TestCase):
     def test_post_detail_page_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(
-            reverse(POST_DETAIL_URL_NAME, kwargs={'post_id': self.post.id}))
+            reverse(ct.POST_DETAIL_URL_NAME, kwargs={'post_id': self.post.id}))
         page_context = (
             'post',
             'post_count',
@@ -283,7 +249,7 @@ class TaskPagesTests(TestCase):
     def test_post_create_page_show_correct_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
         response = self.authorized_client.get(
-            reverse(POST_CREATE_URL_NAME))
+            reverse(ct.POST_CREATE_URL_NAME))
         page_context = (
             'form',
         )
@@ -301,7 +267,7 @@ class TaskPagesTests(TestCase):
         """Проверяем чтобы созданный Пост с группой не попап в чужую группу."""
         form_fields = {
             reverse(
-                GROUP_LIST_URL_NAME, kwargs={"slug": self.group.slug}
+                ct.GROUP_LIST_URL_NAME, kwargs={"slug": self.group.slug}
             ): Post.objects.exclude(group=self.post.group),
         }
         for value, expected in form_fields.items():
@@ -315,12 +281,12 @@ class TaskPagesTests(TestCase):
         comments_count = Comment.objects.count()
         form_data = {"text": "Тестовый коммент"}
         response = self.authorized_client.post(
-            reverse(POST_ADD_COMMENT, kwargs={"post_id": self.post.id}),
+            reverse(ct.POST_ADD_COMMENT, kwargs={"post_id": self.post.id}),
             data=form_data,
             follow=True,
         )
         self.assertRedirects(
-            response, reverse(POST_DETAIL_URL_NAME,
+            response, reverse(ct.POST_DETAIL_URL_NAME,
                               kwargs={"post_id": self.post.id})
         )
         self.assertEqual(Comment.objects.count(), comments_count + 1)
@@ -329,62 +295,74 @@ class TaskPagesTests(TestCase):
 
     def test_check_cache(self):
         """Проверка кеша."""
-        first_response_to_page = self.client.get(reverse(INDEX_URL_NAME))
-        first_response_content = first_response_to_page.content
+        response_to_page = self.client.get(reverse(ct.INDEX_URL_NAME))
+        content_of_responsed_page = response_to_page.content
         Post.objects.get(id=1).delete()
-        second_response_to_page = self.client.get(reverse(INDEX_URL_NAME))
-        second_response_content = second_response_to_page.content
-        self.assertEqual(first_response_content, second_response_content)
+        response_to_cache_page = self.client.get(reverse(ct.INDEX_URL_NAME))
+        content_of_cached_page = response_to_cache_page.content
+        self.assertEqual(content_of_responsed_page, content_of_cached_page)
 
     def test_follow_page(self):
-        response = self.authorized_client.get(reverse(FOLLOW_INDEX_URL_NAME))
-        self.assertEqual(len(response.context["page_obj"]), 0)
+        response_to_folow_page = self.authorized_client.get(
+            reverse(ct.FOLLOW_INDEX_URL_NAME))
+        self.assertEqual(len(response_to_folow_page.context["page_obj"]), 0)
         Follow.objects.get_or_create(user=self.user, author=self.post.author)
-        r_2 = self.authorized_client.get(reverse(FOLLOW_INDEX_URL_NAME))
-        self.assertEqual(len(r_2.context["page_obj"]), 1)
-        self.assertIn(self.post, r_2.context["page_obj"])
+        response_to_check_follows = self.authorized_client.get(
+            reverse(ct.FOLLOW_INDEX_URL_NAME))
+        self.assertEqual(len(response_to_check_follows.context["page_obj"]), 1)
+        self.assertIn(self.post, response_to_check_follows.context["page_obj"])
 
         outsider = User.objects.create(username="NoName")
         self.authorized_client.force_login(outsider)
-        r_2 = self.authorized_client.get(reverse(FOLLOW_INDEX_URL_NAME))
-        self.assertNotIn(self.post, r_2.context["page_obj"])
+        response_to_correct_follows = self.authorized_client.get(
+            reverse(ct.FOLLOW_INDEX_URL_NAME))
+        self.assertNotIn(self.post,
+                         response_to_correct_follows.context["page_obj"])
 
         Follow.objects.all().delete()
-        r_3 = self.authorized_client.get(reverse(FOLLOW_INDEX_URL_NAME))
-        self.assertEqual(len(r_3.context["page_obj"]), 0)
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+        response_to_check_follows_value = self.authorized_client.get(
+            reverse(ct.FOLLOW_INDEX_URL_NAME))
+        self.assertEqual(len(
+            response_to_check_follows_value.context["page_obj"]), 0)
 
     def test_image_in_group_list_page(self):
         """Картинка передается на страницу group_list."""
         response = self.client.get(
-            reverse(GROUP_LIST_URL_NAME, kwargs={"slug": self.group.slug}),
+            reverse(ct.GROUP_LIST_URL_NAME, kwargs={"slug": self.group.slug}),
         )
-        obj = response.context["page_obj"][0]
-        self.assertEqual(obj.image, self.post.image)
+        resposne_to_group_list = response.context["page_obj"][0]
+        self.assertEqual(resposne_to_group_list.image, self.post.image)
 
     def test_image_in_index_and_profile_page(self):
         """Картинка передается на страницу index_and_profile."""
-        templates = (
-            reverse(INDEX_URL_NAME),
-            reverse(PROFILE_URL_NAME, kwargs={"username": self.post.author}),
+        template = (
+            reverse(ct.INDEX_URL_NAME),
         )
-        for url in templates:
+        for url in template:
             with self.subTest(url):
                 response = self.client.get(url)
-                obj = response.context["page_obj"][0]
-                self.assertEqual(obj.image, self.post.image)
+                response_to_context = response.context["page_obj"][0]
+                self.assertEqual(response_to_context.image, self.post.image)
+
+    def test_image_in_profile_page(self):
+        """Картинка передается на страницу profile."""
+        template = (
+            reverse(ct.PROFILE_URL_NAME,
+                    kwargs={"username": self.post.author}),
+        )
+        for url in template:
+            with self.subTest(url):
+                response = self.client.get(url)
+                response_to_context = response.context["page_obj"][0]
+                self.assertEqual(response_to_context.image, self.post.image)
 
     def test_image_in_post_detail_page(self):
         """Картинка передается на страницу post_detail."""
         response = self.client.get(
-            reverse(POST_DETAIL_URL_NAME, kwargs={"post_id": self.post.id})
+            reverse(ct.POST_DETAIL_URL_NAME, kwargs={"post_id": self.post.id})
         )
-        obj = response.context["post"]
-        self.assertEqual(obj.image, self.post.image)
+        response_to_post_detail = response.context["post"]
+        self.assertEqual(response_to_post_detail.image, self.post.image)
 
     def test_image_in_page(self):
         """Проверяем что пост с картинкой создается в БД"""

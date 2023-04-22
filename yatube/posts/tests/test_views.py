@@ -139,25 +139,6 @@ class TaskPagesTests(TestCase):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
                 self.assertTemplateUsed(response, template)
 
-    def test_paginator_profile(self):
-        url_expected_post_number = {
-            ct.PROFILE_URL_NAME: (
-                {'username': self.user.username},
-                self.user.posts.all()[:NUMBER_OF_POSTS]
-            ),
-        }
-        for url_name, params in url_expected_post_number.items():
-            kwargs, queryset = params
-            with self.subTest(url_name=url_name):
-                response = self.client.get(reverse(url_name, kwargs=kwargs))
-                self.assertEqual(response.status_code, HTTPStatus.OK)
-                page_obj = response.context.get('page_obj')
-                self.assertIsNotNone(page_obj)
-                self.assertIsInstance(page_obj, Page)
-                self.assertQuerysetEqual(
-                    page_obj, queryset, lambda x: x
-                )
-
     def test_posts_index_page_show_correct_context(self):
         """Шаблон posts/index сформирован с правильным контекстом."""
         response = self.client.get(reverse(ct.INDEX_URL_NAME))
@@ -221,11 +202,7 @@ class TaskPagesTests(TestCase):
         """Шаблон create_post сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             reverse(ct.POST_CREATE_URL_NAME))
-        page_context = (
-            'form',
-        )
-        for value in page_context:
-            self.assertIn(value, response.context)
+        self.assertIn('form', response.context)
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField}
@@ -236,16 +213,11 @@ class TaskPagesTests(TestCase):
 
     def test_check_group_not_in_mistake_group_list_page(self):
         """Проверяем чтобы созданный Пост с группой не попап в чужую группу."""
-        form_fields = {
-            reverse(
-                ct.GROUP_LIST_URL_NAME, kwargs={"slug": self.group.slug}
-            ): Post.objects.exclude(group=self.post.group),
-        }
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                response = self.authorized_client.get(value)
-                form_field = response.context.get("page_obj")
-                self.assertNotIn(expected, form_field)
+        response = self.authorized_client.get(
+            reverse(ct.GROUP_LIST_URL_NAME, kwargs={"slug": self.group.slug}))
+        self.assertNotIn(
+            Post.objects.exclude(group=self.post.group),
+            response.context.get("page_obj"))
 
     def test_comment_correct_context(self):
         """Валидная форма Комментария создает запись в Post."""

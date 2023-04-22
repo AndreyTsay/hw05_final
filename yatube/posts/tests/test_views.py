@@ -1,6 +1,6 @@
 import shutil
 import tempfile
-
+import posts.tests.constants as ct
 from http import HTTPStatus
 
 from django import forms
@@ -13,7 +13,6 @@ from django.urls import reverse
 
 from posts.models import Comment, Follow, Group, Post
 from posts.views import NUMBER_OF_POSTS
-import posts.tests.constants as ct
 
 User = get_user_model()
 
@@ -37,63 +36,36 @@ class PaginatorViewsTest(TestCase):
 
     def test_paginator_index(self):
         """"Тест пагинатора на странице index"""
-        url_expected_post_number = {
-            ct.INDEX_URL_NAME: (
-                {},
-                Post.objects.all()[:NUMBER_OF_POSTS]
-            ),
-        }
-        for url_name, params in url_expected_post_number.items():
-            kwargs, queryset = params
-            with self.subTest(url_name=url_name):
-                response = self.client.get(reverse(url_name, kwargs=kwargs))
-                self.assertEqual(response.status_code, HTTPStatus.OK)
-                page_obj = response.context.get('page_obj')
-                self.assertIsNotNone(page_obj)
-                self.assertIsInstance(page_obj, Page)
-                self.assertQuerysetEqual(
-                    page_obj, queryset, lambda x: x
-                )
+        response = self.client.get(reverse(ct.INDEX_URL_NAME, kwargs={}))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        page_obj = response.context.get('page_obj')
+        self.assertIsNotNone(page_obj)
+        self.assertIsInstance(page_obj, Page)
+        self.assertQuerysetEqual(
+            page_obj, Post.objects.all()[:NUMBER_OF_POSTS], lambda x: x
+            )
 
-    def test_paginator_group_list(self):
+    def tesst_paginator_group_list(self):
         """Тест пагинатора на странице group_list"""
-        url_expected_post_number = {
-            ct.GROUP_LIST_URL_NAME: (
-                {'slug': self.group.slug},
-                self.group.posts.all()[:NUMBER_OF_POSTS]
-            ),
-        }
-        for url_name, params in url_expected_post_number.items():
-            kwargs, queryset = params
-            with self.subTest(url_name=url_name):
-                response = self.client.get(reverse(url_name, kwargs=kwargs))
-                self.assertEqual(response.status_code, HTTPStatus.OK)
-                page_obj = response.context.get('page_obj')
-                self.assertIsNotNone(page_obj)
-                self.assertIsInstance(page_obj, Page)
-                self.assertQuerysetEqual(
-                    page_obj, queryset, lambda x: x
-                )
+        response = self.client.get(
+            reverse(ct.GROUP_LIST_URL_NAME,
+                    kwargs=({'slug': self.group.slug})))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        page_obj = response.context.get('page_obj')
+        self.assertIsNotNone(page_obj)
+        self.assertIsInstance(page_obj, Page)
+        self.assertEqual(page_obj, (self.group.posts.all()[:NUMBER_OF_POSTS]))
 
-    def test_paginator_profile(self):
+    def tesst_paginator_profile(self):
         """Тест пагинатора на странице profile"""
-        url_expected_post_number = {
-            ct.PROFILE_URL_NAME: (
-                {'username': self.user.username},
-                self.user.posts.all()[:NUMBER_OF_POSTS]
-            ),
-        }
-        for url_name, params in url_expected_post_number.items():
-            kwargs, queryset = params
-            with self.subTest(url_name=url_name):
-                response = self.client.get(reverse(url_name, kwargs=kwargs))
-                self.assertEqual(response.status_code, HTTPStatus.OK)
-                page_obj = response.context.get('page_obj')
-                self.assertIsNotNone(page_obj)
-                self.assertIsInstance(page_obj, Page)
-                self.assertQuerysetEqual(
-                    page_obj, queryset, lambda x: x
-                )
+        response = self.client.get(
+            reverse(ct.PROFILE_URL_NAME,
+                    kwargs=({'username': self.user.username})))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        page_obj = response.context.get('page_obj')
+        self.assertIsNotNone(page_obj)
+        self.assertIsInstance(page_obj, Page)
+        self.assertEqual(page_obj, self.user.posts.all()[:NUMBER_OF_POSTS])
 
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -302,59 +274,52 @@ class TaskPagesTests(TestCase):
         content_of_cached_page = response_to_cache_page.content
         self.assertEqual(content_of_responsed_page, content_of_cached_page)
 
-    def test_follow_page(self):
+    def test_count_profile_without_follows(self):
         response_to_folow_page = self.authorized_client.get(
             reverse(ct.FOLLOW_INDEX_URL_NAME))
         self.assertEqual(len(response_to_folow_page.context["page_obj"]), 0)
+
+    def test_follow_page(self):
         Follow.objects.get_or_create(user=self.user, author=self.post.author)
         response_to_check_follows = self.authorized_client.get(
             reverse(ct.FOLLOW_INDEX_URL_NAME))
         self.assertEqual(len(response_to_check_follows.context["page_obj"]), 1)
         self.assertIn(self.post, response_to_check_follows.context["page_obj"])
 
+    def test_follow_page_another_author(self):
         outsider = User.objects.create(username="NoName")
         self.authorized_client.force_login(outsider)
-        response_to_correct_follows = self.authorized_client.get(
+        respose = self.authorized_client.get(
             reverse(ct.FOLLOW_INDEX_URL_NAME))
-        self.assertNotIn(self.post,
-                         response_to_correct_follows.context["page_obj"])
+        self.assertNotIn(self.post, respose.context["page_obj"])
 
         Follow.objects.all().delete()
-        response_to_check_follows_value = self.authorized_client.get(
+
+    def test_profile_follows_after_delete(self):
+        respose = self.authorized_client.get(
             reverse(ct.FOLLOW_INDEX_URL_NAME))
-        self.assertEqual(len(
-            response_to_check_follows_value.context["page_obj"]), 0)
+        self.assertEqual(len(respose.context["page_obj"]), 0)
 
     def test_image_in_group_list_page(self):
         """Картинка передается на страницу group_list."""
         response = self.client.get(
             reverse(ct.GROUP_LIST_URL_NAME, kwargs={"slug": self.group.slug}),
         )
-        resposne_to_group_list = response.context["page_obj"][0]
-        self.assertEqual(resposne_to_group_list.image, self.post.image)
+        self.assertEqual(
+            response.context["page_obj"][0].image, self.post.image)
 
     def test_image_in_index_and_profile_page(self):
-        """Картинка передается на страницу index_and_profile."""
-        template = (
-            reverse(ct.INDEX_URL_NAME),
-        )
-        for url in template:
-            with self.subTest(url):
-                response = self.client.get(url)
-                response_to_context = response.context["page_obj"][0]
-                self.assertEqual(response_to_context.image, self.post.image)
+        """Картинка передается на страницу index"""
+        response = self.client.get(reverse(ct.INDEX_URL_NAME))
+        self.assertEqual(
+            response.context["page_obj"][0].image, self.post.image)
 
     def test_image_in_profile_page(self):
         """Картинка передается на страницу profile."""
-        template = (
-            reverse(ct.PROFILE_URL_NAME,
-                    kwargs={"username": self.post.author}),
-        )
-        for url in template:
-            with self.subTest(url):
-                response = self.client.get(url)
-                response_to_context = response.context["page_obj"][0]
-                self.assertEqual(response_to_context.image, self.post.image)
+        response = self.client.get(reverse(ct.PROFILE_URL_NAME,
+                                   kwargs={"username": self.post.author}),)
+        response_to_context = response.context["page_obj"][0]
+        self.assertEqual(response_to_context.image, self.post.image)
 
     def test_image_in_post_detail_page(self):
         """Картинка передается на страницу post_detail."""

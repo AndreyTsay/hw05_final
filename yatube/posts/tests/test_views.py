@@ -44,7 +44,7 @@ class PaginatorViewsTest(TestCase):
         self.assertQuerysetEqual(
             page_obj, Post.objects.all()[:NUMBER_OF_POSTS], lambda x: x)
 
-    def tesst_paginator_group_list(self):
+    def test_paginator_group_list(self):
         """Тест пагинатора на странице group_list"""
         response = self.client.get(
             reverse(ct.GROUP_LIST_URL_NAME,
@@ -53,9 +53,10 @@ class PaginatorViewsTest(TestCase):
         page_obj = response.context.get('page_obj')
         self.assertIsNotNone(page_obj)
         self.assertIsInstance(page_obj, Page)
-        self.assertEqual(page_obj, (self.group.posts.all()[:NUMBER_OF_POSTS]))
+        self.assertQuerysetEqual(
+            page_obj, (self.group.posts.all()[:NUMBER_OF_POSTS]), lambda x: x)
 
-    def tesst_paginator_profile(self):
+    def test_paginator_profile(self):
         """Тест пагинатора на странице profile"""
         response = self.client.get(
             reverse(ct.PROFILE_URL_NAME,
@@ -64,14 +65,15 @@ class PaginatorViewsTest(TestCase):
         page_obj = response.context.get('page_obj')
         self.assertIsNotNone(page_obj)
         self.assertIsInstance(page_obj, Page)
-        self.assertEqual(page_obj, self.user.posts.all()[:NUMBER_OF_POSTS])
+        self.assertQuerysetEqual(
+            page_obj, self.user.posts.all()[:NUMBER_OF_POSTS], lambda x: x)
 
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
-class TaskPagesTests(TestCase):
+class PagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -263,8 +265,6 @@ class TaskPagesTests(TestCase):
         respose = self.authorized_client.get(
             reverse(ct.FOLLOW_INDEX_URL_NAME))
         self.assertNotIn(self.post, respose.context["page_obj"])
-
-        Follow.objects.all().delete()
 
     def test_profile_follows_after_delete(self):
         respose = self.authorized_client.get(

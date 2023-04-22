@@ -42,8 +42,7 @@ class PaginatorViewsTest(TestCase):
         self.assertIsNotNone(page_obj)
         self.assertIsInstance(page_obj, Page)
         self.assertQuerysetEqual(
-            page_obj, Post.objects.all()[:NUMBER_OF_POSTS], lambda x: x
-            )
+            page_obj, Post.objects.all()[:NUMBER_OF_POSTS], lambda x: x)
 
     def tesst_paginator_group_list(self):
         """Тест пагинатора на странице group_list"""

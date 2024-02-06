@@ -6,7 +6,7 @@ class AboutAuthorView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['just_title'] = 'Об авторе проекта'
+        context['just_title'] = 'О Комитете'
         return context
 
 
@@ -15,5 +15,5 @@ class AboutTechView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['just_title'] = 'Технологии'
+        context['just_title'] = 'Контакты'
         return context

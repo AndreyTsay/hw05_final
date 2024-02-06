@@ -1,24 +1,27 @@
 {% load static %}
-<nav class="navbar navbar-light" style="background-color: lightskyblue">
+<nav class="navbar navbar-light" style="background-color: rgb(80,102,127)">
   <div class="container">
-    <a class="navbar-brand" href="{% url 'posts:index' %}">
-      <img src="{% static 'img/logo.png' %}" width="30" height="30" 
-           class="d-inline-block align-top" alt="">
-      <span style="color:red">Ya</span>tube</a>
+    <a class="navbar-brand text-wrap" href="{% url 'posts:index' %}">
+      <div class="d-flex align-items-center">
+        <img src="{% static 'img/logo2.svg' %}" width="30" height="30" class="d-inline-block align-top text-wrap" alt="">
+        <p class="menu__subtitle d-none d-md-block mb-md-0" style="color: white;">Правительство Санкт‑Петербурга</p>
+    </div>
+           <h1 class="menu__title mr-auto mb-0 mb-md-12" style="color: white;">Комитет по вопросам законности, правопорядка и безопасности</h1>
+           
     </a>
     {% with request.resolver_match.view_name as view_name %}
     <ul class="nav nav-pills">
       <li class="nav-item"> 
-        <a class="nav-link{% if view_name  == 'about:author' %} active{% endif %}" 
-           href="{% url 'about:author' %}">Об авторе</a>
+        <a class="nav-link link-light{% if view_name  == 'about:author' %} active{% endif %}" 
+           href="{% url 'about:author' %}">О Комитете</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link{% if view_name  == 'about:tech' %} active{% endif %}" 
-           href="{% url 'about:tech' %}">Технологии</a>
+        <a class="nav-link link-light{% if view_name  == 'about:tech' %} active{% endif %}" 
+           href="{% url 'about:tech' %}">Контакты</a>
       </li>
       {% if user.is_authenticated %}
         <li class="nav-item"> 
-          <a class="nav-link{% if view_name  == 'posts:post_create' %} active{% endif %}" 
+          <a class="nav-link link-light{% if view_name  == 'posts:post_create' %} active{% endif %}" 
              href="{% url 'posts:create_post' %}">Новая запись</a>
         </li>
         <li class="nav-item"> 

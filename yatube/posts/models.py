@@ -63,6 +63,11 @@ class Comment(models.Model):
         User, on_delete=models.CASCADE, related_name="comments")
     text = models.TextField(
         "Текст комментария", help_text="Введите текст комментария")
+    image = models.ImageField(
+        'Картинка',
+        upload_to='posts/1',
+        blank=True
+    )
     created = models.DateTimeField("Дата публикации", auto_now_add=True)
 
     class Meta:

@@ -38,11 +38,17 @@
           {{ post.text }}
         </p>
         {% if post.text %}
-          <a href="{% url 'posts:post_detail' post.id %}">Подробная информация </a>
+        <div class="card mb-4">
+          <div class="card-body">
+              <a href="{% url 'posts:post_detail' post.id %}">Подробная информация </a>
+          </div>
         {% endif %}
       </article>
       {% if post.group %}
-        <a href="{% url 'posts:group_list' post.group.slug %}">Все записи группы&#160;{{ post.group.title }}</a>
+      <div class="card mb-4">
+        <div class="card-body">
+          <a href="{% url 'posts:group_list' post.group.slug %}">Все записи группы&#160;{{ post.group.title }}</a>
+        </div>
       {% endif %}
     <hr>
     {% endfor %}
